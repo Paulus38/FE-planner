@@ -14,7 +14,7 @@ import {
   getWeekDates,
   dateStr as toStr,
 } from '@/lib/scheduler';
-import { SUBJECT_NAMES, SUBJECT_COLORS, WEEKDAY_NAMES } from '@/lib/constants';
+import { SUBJECT_NAMES, SUBJECT_COLORS, WEEKDAY_NAMES, getSubjectName, getSubjectColor } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,7 @@ import {
 } from 'recharts';
 
 export default function SelfStudyPage() {
-  const { settings, fixedActivities, scheduleEntries, sessions, tasks, loading, refresh } = useAppData();
+  const { settings, fixedActivities, scheduleEntries, sessions, tasks, subjects, loading, refresh } = useAppData();
   const [generating, setGenerating] = useState(false);
 
   const today = new Date();
@@ -59,21 +59,21 @@ export default function SelfStudyPage() {
 
   const pieData = useMemo(() => {
     return [
-      { name: 'Tiếng Anh', value: ratio.english, color: SUBJECT_COLORS.english },
-      { name: 'Việt văn', value: ratio.vietnamese, color: SUBJECT_COLORS.vietnamese },
-      { name: 'Đàn', value: ratio.instrument, color: SUBJECT_COLORS.instrument },
-      { name: 'Đọc sách', value: ratio.reading, color: SUBJECT_COLORS.reading },
+      { name: getSubjectName(subjects, 'english'), value: ratio.english, color: getSubjectColor(subjects, 'english') },
+      { name: getSubjectName(subjects, 'vietnamese'), value: ratio.vietnamese, color: getSubjectColor(subjects, 'vietnamese') },
+      { name: getSubjectName(subjects, 'instrument'), value: ratio.instrument, color: getSubjectColor(subjects, 'instrument') },
+      { name: getSubjectName(subjects, 'reading'), value: ratio.reading, color: getSubjectColor(subjects, 'reading') },
     ].filter((d) => d.value > 0);
-  }, [ratio]);
+  }, [ratio, subjects]);
 
   const targetPieData = useMemo(() => {
     const total = ratio.total > 0 ? ratio.total : 420;
     const target = settings?.english_target_pct || 50;
     return [
-      { name: 'Tiếng Anh (mục tiêu)', value: Math.round(total * target / 100), color: SUBJECT_COLORS.english },
+      { name: 'Tiếng Anh (mục tiêu)', value: Math.round(total * target / 100), color: getSubjectColor(subjects, 'english') },
       { name: 'Các môn khác (mục tiêu)', value: Math.round(total * (100 - target) / 100), color: '#94a3b8' },
     ];
-  }, [ratio.total, settings]);
+  }, [ratio.total, settings, subjects]);
 
   async function handleGeneratePlan() {
     if (!settings) return;
@@ -181,7 +181,7 @@ export default function SelfStudyPage() {
             ) : (
               <div className="space-y-2">
                 {todaySessions.map((s) => {
-                  const color = SUBJECT_COLORS[s.subject_code] || '#94a3b8';
+                  const color = getSubjectColor(subjects, s.subject_code);
                   return (
                     <div
                       key={s.id}
@@ -200,7 +200,7 @@ export default function SelfStudyPage() {
                       ) : s.status === 'skipped' ? (
                         <Badge variant="secondary">Skip</Badge>
                       ) : (
-                        <Badge variant="outline">{SUBJECT_NAMES[s.subject_code] || s.subject_code}</Badge>
+                        <Badge variant="outline">{getSubjectName(subjects, s.subject_code)}</Badge>
                       )}
                     </div>
                   );

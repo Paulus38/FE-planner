@@ -1,4 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -374,6 +376,41 @@ const authApi = {
     setRefreshToken(null);
     cachedAuthState = { user: null, session: null };
     emitAuthEvent('SIGNED_OUT', null);
+  },
+
+  // Google OAuth — redirect browser to Supabase's Google sign-in page
+  // Supabase redirects back to /auth/callback?code=... after Google authenticates the user
+  signInWithGoogle() {
+    if (typeof window === 'undefined') return;
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const params = new URLSearchParams({
+      client_id: SUPABASE_ANON_KEY,
+      redirect_uri: `${SUPABASE_URL}/auth/v1/callback`,
+      response_type: 'code',
+      scope: 'openid profile email',
+      flow: 'code',
+      state: callbackUrl,
+    });
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&${params.toString()}`;
+  },
+
+  // Google OAuth — exchange the authorization code for session tokens
+  async exchangeCodeForSession(code: string) {
+    const result = await apiFetch('/auth/google/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+    if (result.error) return { data: null, error: { message: result.error } };
+    if (result.session) {
+      setToken(result.session.access_token);
+      setRefreshToken(result.session.refresh_token);
+      cachedAuthState = {
+        user: result.user,
+        session: result.session,
+      };
+      emitAuthEvent('SIGNED_IN', result.session);
+    }
+    return { data: result, error: null };
   },
 
   async getSession() {

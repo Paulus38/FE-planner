@@ -9,6 +9,8 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => void;
+  exchangeCodeForSession: (code: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -18,6 +20,8 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   signIn: async () => ({ error: 'Not implemented' }),
   signUp: async () => ({ error: 'Not implemented' }),
+  signInWithGoogle: () => {},
+  exchangeCodeForSession: async () => ({ error: 'Not implemented' }),
   signOut: async () => {},
 });
 
@@ -52,12 +56,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   }, []);
 
+  const signInWithGoogle = useCallback(() => {
+    supabase.auth.signInWithGoogle();
+  }, []);
+
+  const exchangeCodeForSession = useCallback(async (code: string) => {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return { error: error.message };
+    return { error: null };
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle, exchangeCodeForSession, signOut }}>
       {children}
     </AuthContext.Provider>
   );

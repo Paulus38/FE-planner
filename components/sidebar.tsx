@@ -19,21 +19,48 @@ import {
   Menu,
   X,
   HelpCircle,
+  Library,
+  Calculator,
+  FlaskConical,
+  Globe,
+  Code,
+  Palette,
+  Brain,
+  Microscope,
+  Atom,
+  Compass,
+  Scroll,
+  Feather,
+  History,
+  Map,
+  Trophy,
+  Star,
+  type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAppData } from '@/hooks/use-app-data';
+import type { StudySubject } from '@/lib/types';
 
-const navItems = [
+const ICON_MAP: Record<string, LucideIcon> = {
+  Languages, PenLine, Music, BookMarked, GraduationCap, Heart, BookOpen,
+  Calculator, FlaskConical, Globe, Code, Palette, Brain, Library,
+  Microscope, Atom, Compass, Scroll, Feather, History, Map, Trophy, Star,
+};
+
+function getIcon(iconName?: string | null): LucideIcon {
+  if (iconName && ICON_MAP[iconName]) return ICON_MAP[iconName];
+  return BookOpen;
+}
+
+const staticNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/today', label: 'Lịch hôm nay', icon: CalendarDays },
   { href: '/calendar', label: 'Lịch tuần', icon: CalendarRange },
   { href: '/schedule', label: 'Thời khóa biểu', icon: BookOpen },
   { href: '/self-study', label: 'Tự học', icon: GraduationCap },
-  { href: '/english', label: 'Tiếng Anh', icon: Languages },
-  { href: '/journal', label: 'Nhật ký', icon: Heart },
-  { href: '/books', label: 'Đọc sách', icon: BookMarked },
-  { href: '/instrument', label: 'Đàn', icon: Music },
+  { href: '/courses', label: 'Quản lý môn học', icon: Library },
   { href: '/statistics', label: 'Thống kê', icon: BarChart3 },
   { href: '/weekly-review', label: 'Tổng kết tuần', icon: PenLine },
   { href: '/settings', label: 'Cài đặt', icon: Settings },
@@ -43,6 +70,11 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { subjects } = useAppData();
+
+  const courseNavItems = subjects
+    .filter((s) => s.show_in_nav)
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   return (
     <>
@@ -72,7 +104,11 @@ export function Sidebar() {
             className="absolute left-0 top-0 h-full w-72 border-r border-border bg-card p-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <NavList
+              pathname={pathname}
+              courseNavItems={courseNavItems}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </nav>
         </div>
       )}
@@ -87,7 +123,7 @@ export function Sidebar() {
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto p-3">
-          <NavList pathname={pathname} />
+          <NavList pathname={pathname} courseNavItems={courseNavItems} />
         </nav>
       </aside>
     </>
@@ -96,14 +132,16 @@ export function Sidebar() {
 
 function NavList({
   pathname,
+  courseNavItems,
   onNavigate,
 }: {
   pathname: string;
+  courseNavItems: StudySubject[];
   onNavigate?: () => void;
 }) {
   return (
     <ul className="space-y-1">
-      {navItems.map((item) => {
+      {staticNavItems.map((item) => {
         const active = pathname === item.href;
         const Icon = item.icon;
         return (
@@ -124,6 +162,40 @@ function NavList({
           </li>
         );
       })}
+
+      {courseNavItems.length > 0 && (
+        <>
+          <li className="px-3 pt-4 pb-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Môn học của tôi
+            </p>
+          </li>
+          {courseNavItems.map((course) => {
+            const active = pathname === `/courses/${course.id}`;
+            const Icon = getIcon(course.icon_name);
+            return (
+              <li key={course.id}>
+                <Link
+                  href={`/courses/${course.id}`}
+                  onClick={onNavigate}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  <Icon
+                    className="h-4.5 w-4.5 shrink-0"
+                    style={{ width: '1.125rem', height: '1.125rem', color: course.color }}
+                  />
+                  {course.name}
+                </Link>
+              </li>
+            );
+          })}
+        </>
+      )}
     </ul>
   );
 }

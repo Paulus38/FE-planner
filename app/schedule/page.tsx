@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/lib/api';
 import { WEEKDAY_NAMES } from '@/lib/constants';
@@ -8,15 +8,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Clock, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ScheduleEntry } from '@/lib/types';
 
+const RECURRENCE_LABELS: Record<string, string> = {
+  weekly: 'Hàng tuần',
+  daily: 'Hàng ngày',
+  biweekly: '2 tuần/lần',
+  once: 'Một lần',
+};
+
 export default function SchedulePage() {
-  const { scheduleEntries, loading, refresh } = useAppData();
+  const { scheduleEntries, subjects, loading, refresh } = useAppData();
   const [selectedDay, setSelectedDay] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
@@ -25,7 +33,10 @@ export default function SchedulePage() {
     start_time: '08:00',
     end_time: '08:40',
     subject_name: '',
+    subject_id: '' as string | null,
     session_type: 'class',
+    recurrence: 'weekly',
+    recurrence_end_date: '' as string | null,
     note: '',
   });
 
@@ -40,7 +51,10 @@ export default function SchedulePage() {
       start_time: '08:00',
       end_time: '08:40',
       subject_name: '',
+      subject_id: null,
       session_type: 'class',
+      recurrence: 'weekly',
+      recurrence_end_date: null,
       note: '',
     });
     setDialogOpen(true);
@@ -53,10 +67,26 @@ export default function SchedulePage() {
       start_time: entry.start_time,
       end_time: entry.end_time,
       subject_name: entry.subject_name,
+      subject_id: entry.subject_id || null,
       session_type: entry.session_type,
+      recurrence: entry.recurrence || 'weekly',
+      recurrence_end_date: entry.recurrence_end_date || null,
       note: entry.note || '',
     });
     setDialogOpen(true);
+  }
+
+  function handleSelectCourse(courseId: string) {
+    if (!courseId) {
+      setForm({ ...form, subject_id: null });
+      return;
+    }
+    const subject = subjects.find((s) => s.id === courseId);
+    setForm({
+      ...form,
+      subject_id: courseId,
+      subject_name: subject ? subject.name : form.subject_name,
+    });
   }
 
   async function handleSave() {
@@ -71,7 +101,10 @@ export default function SchedulePage() {
       start_time: form.start_time,
       end_time: form.end_time,
       subject_name: form.subject_name.trim(),
+      subject_id: form.subject_id || null,
       session_type: form.session_type,
+      recurrence: form.recurrence,
+      recurrence_end_date: form.recurrence_end_date || null,
       note: form.note.trim() || null,
       sort_order: editingEntry ? editingEntry.sort_order : maxOrder + 1,
     };
@@ -152,40 +185,60 @@ export default function SchedulePage() {
                 <TableRow>
                   <TableHead className="w-32">Giờ</TableHead>
                   <TableHead>Môn học</TableHead>
-                  <TableHead className="hidden sm:table-cell w-32">Loại</TableHead>
+                  <TableHead className="hidden sm:table-cell w-28">Lặp lại</TableHead>
+                  <TableHead className="hidden sm:table-cell w-28">Loại</TableHead>
                   <TableHead className="w-24">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dayEntries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm font-medium tabular-nums">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        {entry.start_time}–{entry.end_time}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="text-sm font-medium">{entry.subject_name}</p>
-                        {entry.note && <p className="text-xs text-muted-foreground">{entry.note}</p>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-sm text-muted-foreground capitalize">{entry.session_type}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(entry)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(entry.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {dayEntries.map((entry) => {
+                  const linkedSubject = entry.subject_id
+                    ? subjects.find((s) => s.id === entry.subject_id)
+                    : null;
+                  return (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm font-medium tabular-nums">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          {entry.start_time}–{entry.end_time}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {linkedSubject && (
+                            <div
+                              className="h-3 w-3 rounded-full shrink-0"
+                              style={{ backgroundColor: linkedSubject.color }}
+                            />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium">{entry.subject_name}</p>
+                            {entry.note && <p className="text-xs text-muted-foreground">{entry.note}</p>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <Repeat className="h-3 w-3" />
+                          {RECURRENCE_LABELS[entry.recurrence || 'weekly'] || 'Hàng tuần'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <span className="text-sm text-muted-foreground capitalize">{entry.session_type}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(entry)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(entry.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -194,7 +247,7 @@ export default function SchedulePage() {
 
       {/* Add/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingEntry ? 'Sửa môn học' : 'Thêm môn học'}</DialogTitle>
           </DialogHeader>
@@ -236,30 +289,78 @@ export default function SchedulePage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Tên môn học</Label>
+              <Label>Môn học (từ danh sách môn đã tạo)</Label>
+              <Select
+                value={form.subject_id || 'none'}
+                onValueChange={handleSelectCourse}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn môn học hoặc nhập tay bên dưới" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Nhập tay —</SelectItem>
+                  {subjects.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tên môn học (hiển thị)</Label>
               <Input
                 value={form.subject_name}
                 onChange={(e) => setForm({ ...form, subject_name: e.target.value })}
                 placeholder="VD: Giáo lý HTCG 1"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Loại</Label>
-              <Select
-                value={form.session_type}
-                onValueChange={(v) => setForm({ ...form, session_type: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="class">Học chính khóa</SelectItem>
-                  <SelectItem value="study">Tự học</SelectItem>
-                  <SelectItem value="reading">Đọc sách</SelectItem>
-                  <SelectItem value="labor">Lao động</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Loại</Label>
+                <Select
+                  value={form.session_type}
+                  onValueChange={(v) => setForm({ ...form, session_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="class">Học chính khóa</SelectItem>
+                    <SelectItem value="study">Tự học</SelectItem>
+                    <SelectItem value="reading">Đọc sách</SelectItem>
+                    <SelectItem value="labor">Lao động</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Lặp lại</Label>
+                <Select
+                  value={form.recurrence}
+                  onValueChange={(v) => setForm({ ...form, recurrence: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Hàng tuần</SelectItem>
+                    <SelectItem value="daily">Hàng ngày</SelectItem>
+                    <SelectItem value="biweekly">2 tuần/lần</SelectItem>
+                    <SelectItem value="once">Một lần</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            {form.recurrence !== 'once' && (
+              <div className="space-y-2">
+                <Label>Ngày kết thúc lặp lại (tùy chọn)</Label>
+                <Input
+                  type="date"
+                  value={form.recurrence_end_date || ''}
+                  onChange={(e) => setForm({ ...form, recurrence_end_date: e.target.value || null })}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Ghi chú (tùy chọn)</Label>
               <Input
