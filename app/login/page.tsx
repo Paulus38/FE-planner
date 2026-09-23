@@ -39,11 +39,7 @@ export default function LoginPage() {
         }
 
         // After signup, seed default data
-        const { data: sessionData } = await supabase.auth.getSession();
-        const newUserId = sessionData.session?.user?.id;
-        if (newUserId) {
-          await seedDefaultDataForUser(newUserId);
-        }
+        await seedDefaultDataForUser('');
         router.replace('/');
       } else {
         const { error: signInError } = await signIn(email, password);

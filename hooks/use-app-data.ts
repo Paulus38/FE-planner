@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
 import type {
   Settings,
@@ -14,6 +13,8 @@ import type {
   WeeklyGoal,
   DailyProgress,
 } from '@/lib/types';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export interface AppData {
   settings: Settings | null;
@@ -58,41 +59,24 @@ export function useAppData(): AppData {
       setLoading(true);
       setError(null);
       try {
-        const [
-          settingsRes,
-          fixedRes,
-          scheduleRes,
-          subjectsRes,
-          tasksRes,
-          sessionsRes,
-          journalRes,
-          goalsRes,
-          progressRes,
-        ] = await Promise.all([
-          supabase.from('settings').select('*').limit(1).maybeSingle(),
-          supabase.from('fixed_activities').select('*').order('sort_order'),
-          supabase.from('schedule_entries').select('*').order('weekday, sort_order'),
-          supabase.from('study_subjects').select('*').order('sort_order'),
-          supabase.from('tasks').select('*').order('due_date'),
-          supabase.from('study_sessions').select('*').order('date, start_time'),
-          supabase.from('journal_entries').select('*').order('entry_date', { ascending: false }).limit(30),
-          supabase.from('weekly_goals').select('*'),
-          supabase.from('daily_progress').select('*').order('progress_date', { ascending: false }).limit(60),
-        ]);
+        const token = localStorage.getItem('sb-access-token');
+        const res = await fetch(`${API_URL}/data`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('Failed to load data');
+        const d = await res.json();
 
         if (cancelled) return;
 
-        if (settingsRes.error) throw settingsRes.error;
-
-        setSettings(settingsRes.data || null);
-        setFixedActivities(fixedRes.data || []);
-        setScheduleEntries(scheduleRes.data || []);
-        setSubjects(subjectsRes.data || []);
-        setTasks(tasksRes.data || []);
-        setSessions(sessionsRes.data || []);
-        setJournalEntries(journalRes.data || []);
-        setWeeklyGoals(goalsRes.data || []);
-        setDailyProgress(progressRes.data || []);
+        setSettings(d.settings || null);
+        setFixedActivities(d.fixedActivities || []);
+        setScheduleEntries(d.scheduleEntries || []);
+        setSubjects(d.subjects || []);
+        setTasks(d.tasks || []);
+        setSessions(d.sessions || []);
+        setJournalEntries(d.journalEntries || []);
+        setWeeklyGoals(d.weeklyGoals || []);
+        setDailyProgress(d.dailyProgress || []);
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('Không thể tải dữ liệu. Vui lòng thử lại.');
