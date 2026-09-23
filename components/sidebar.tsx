@@ -18,6 +18,7 @@ import {
   Church,
   Menu,
   X,
+  HelpCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ const navItems = [
   { href: '/statistics', label: 'Thống kê', icon: BarChart3 },
   { href: '/weekly-review', label: 'Tổng kết tuần', icon: PenLine },
   { href: '/settings', label: 'Cài đặt', icon: Settings },
+  { href: '/help', label: 'Hướng dẫn', icon: HelpCircle },
 ];
 
 export function Sidebar() {
