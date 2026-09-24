@@ -26,6 +26,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { onboarding as onboardingApi } from '@/lib/api';
+import { useAuth } from '@/components/auth-provider';
 
 const steps = [
   {
@@ -33,7 +34,7 @@ const steps = [
     title: 'Chào mừng đến với Study Planner',
     description:
       'Ứng dụng giúp bạn quản lý thời gian học tập, sinh hoạt và đời sống thiêng liêng. ' +
-      'Khi đăng ký tài khoản mới, dữ liệu mẫu đã được tạo sẵn gồm thời khóa biểu, lịch sinh hoạt và mục tiêu.',
+      'Bạn có thể bắt đầu với dữ liệu mẫu hoặc tự tuỳ chỉnh từ đầu.',
     color: 'text-blue-500',
   },
   {
@@ -109,16 +110,18 @@ const steps = [
 ];
 
 export function OnboardingModal() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
+    if (!user) return;
     if (typeof window === 'undefined') return;
     let cancelled = false;
     (async () => {
       try {
-        const completed = await onboardingApi.getStatus();
-        if (!cancelled && !completed) {
+        const status = await onboardingApi.getStatus();
+        if (!cancelled && !status.onboarding_completed) {
           const timer = setTimeout(() => setOpen(true), 800);
           return () => clearTimeout(timer);
         }
@@ -127,7 +130,7 @@ export function OnboardingModal() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [user]);
 
   async function handleClose() {
     setOpen(false);
@@ -208,8 +211,4 @@ export function OnboardingModal() {
 
 export async function resetOnboarding() {
   // No-op: onboarding status is now per-user in the database.
-  // The help page's "Xem lại hướng dẫn nhanh" button reloads the page
-  // which triggers the onboarding check — but since the DB says completed,
-  // it won't show. To force re-show, the user would need a backend admin call.
-  // This function is kept for backward compatibility with the help page.
 }
