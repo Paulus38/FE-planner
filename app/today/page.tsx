@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAppData } from '@/hooks/use-app-data';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/api';
 import {
   buildTimelineForDay,
   formatVietnameseDate,

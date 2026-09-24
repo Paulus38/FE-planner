@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/auth-provider';
+import { apiFetch } from '@/lib/api';
 import type {
   Settings,
   FixedActivity,
@@ -30,6 +31,7 @@ export interface AppData {
 }
 
 export function useAppData(): AppData {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [fixedActivities, setFixedActivities] = useState<FixedActivity[]>([]);
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
@@ -46,46 +48,28 @@ export function useAppData(): AppData {
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const [
-          settingsRes,
-          fixedRes,
-          scheduleRes,
-          subjectsRes,
-          tasksRes,
-          sessionsRes,
-          journalRes,
-          goalsRes,
-          progressRes,
-        ] = await Promise.all([
-          supabase.from('settings').select('*').limit(1),
-          supabase.from('fixed_activities').select('*').order('sort_order'),
-          supabase.from('schedule_entries').select('*').order('weekday, sort_order'),
-          supabase.from('study_subjects').select('*').order('sort_order'),
-          supabase.from('tasks').select('*').order('due_date'),
-          supabase.from('study_sessions').select('*').order('date, start_time'),
-          supabase.from('journal_entries').select('*').order('entry_date', { ascending: false }).limit(30),
-          supabase.from('weekly_goals').select('*'),
-          supabase.from('daily_progress').select('*').order('progress_date', { ascending: false }).limit(60),
-        ]);
-
+        const d = await apiFetch('/data');
         if (cancelled) return;
-
-        if (settingsRes.error) throw settingsRes.error;
-
-        setSettings(settingsRes.data?.[0] || null);
-        setFixedActivities(fixedRes.data || []);
-        setScheduleEntries(scheduleRes.data || []);
-        setSubjects(subjectsRes.data || []);
-        setTasks(tasksRes.data || []);
-        setSessions(sessionsRes.data || []);
-        setJournalEntries(journalRes.data || []);
-        setWeeklyGoals(goalsRes.data || []);
-        setDailyProgress(progressRes.data || []);
+        if (d.error) throw new Error(d.error);
+        setSettings(d.settings || null);
+        setFixedActivities(d.fixedActivities || []);
+        setScheduleEntries(d.scheduleEntries || []);
+        setSubjects(d.subjects || []);
+        setTasks(d.tasks || []);
+        setSessions(d.sessions || []);
+        setJournalEntries(d.journalEntries || []);
+        setWeeklyGoals(d.weeklyGoals || []);
+        setDailyProgress(d.dailyProgress || []);
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('Không thể tải dữ liệu. Vui lòng thử lại.');
@@ -97,7 +81,7 @@ export function useAppData(): AppData {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey]);
+  }, [refreshKey, user]);
 
   return {
     settings,

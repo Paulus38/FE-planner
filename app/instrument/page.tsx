@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/api';
 import { useAppData } from '@/hooks/use-app-data';
 import { dateStr, todayStr, formatDuration, getWeekDates } from '@/lib/scheduler';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

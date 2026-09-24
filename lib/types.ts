@@ -64,7 +64,10 @@ export interface ScheduleEntry {
   start_time: string;
   end_time: string;
   subject_name: string;
+  subject_id?: string | null;
   session_type: string;
+  recurrence: string;
+  recurrence_end_date?: string | null;
   note?: string | null;
   sort_order: number;
 }
@@ -75,6 +78,10 @@ export interface StudySubject {
   code: string;
   color: string;
   icon?: string | null;
+  icon_name?: string | null;
+  description?: string | null;
+  tags?: string[] | null;
+  show_in_nav: boolean;
   is_in_english_ratio: boolean;
   weekly_goal_min: number;
   monthly_goal_min: number;

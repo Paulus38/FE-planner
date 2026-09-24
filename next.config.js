@@ -6,6 +6,7 @@ const nextConfig = {
   images: { unoptimized: true },
   webpack: (config) => {
     config.cache = false;
+    config.parallelism = 1;
     return config;
   },
 };

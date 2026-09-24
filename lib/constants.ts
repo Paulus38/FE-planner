@@ -1,4 +1,4 @@
-import type { ActivityCategory } from './types';
+import type { ActivityCategory, StudySubject } from './types';
 
 export const WEEKDAY_NAMES = [
   'Chủ Nhật',
@@ -44,6 +44,50 @@ export const SUBJECT_NAMES: Record<string, string> = {
   homework: 'Ôn bài / Bài tập',
   journal: 'Nhật ký thiêng liêng',
 };
+
+// Dynamic lookup helpers — use these instead of the static maps above
+export function getSubjectName(subjects: StudySubject[], code: string): string {
+  const s = subjects.find((s) => s.code === code);
+  return s?.name || SUBJECT_NAMES[code] || code;
+}
+
+export function getSubjectColor(subjects: StudySubject[], code: string): string {
+  const s = subjects.find((s) => s.code === code);
+  return s?.color || SUBJECT_COLORS[code] || '#94a3b8';
+}
+
+export function getSubjectById(subjects: StudySubject[], id: string): StudySubject | undefined {
+  return subjects.find((s) => s.id === id);
+}
+
+// Lucide icon name → component mapping for dynamic course icons
+export const COURSE_ICONS: Record<string, string> = {
+  Languages: 'Languages',
+  PenLine: 'PenLine',
+  Music: 'Music',
+  BookMarked: 'BookMarked',
+  GraduationCap: 'GraduationCap',
+  Heart: 'Heart',
+  BookOpen: 'BookOpen',
+  Calculator: 'Calculator',
+  FlaskConical: 'FlaskConical',
+  Globe: 'Globe',
+  Code: 'Code',
+  Palette: 'Palette',
+  Brain: 'Brain',
+  Library: 'Library',
+  Microscope: 'Microscope',
+  Atom: 'Atom',
+  Compass: 'Compass',
+  Scroll: 'Scroll',
+  Feather: 'Feather',
+  History: 'History',
+  Map: 'Map',
+  Trophy: 'Trophy',
+  Star: 'Star',
+};
+
+export const COURSE_ICON_LIST = Object.keys(COURSE_ICONS);
 
 export const ENGLISH_SKILLS = [
   { code: 'vocabulary', name: 'Vocabulary', target: 60, color: '#3b82f6' },
