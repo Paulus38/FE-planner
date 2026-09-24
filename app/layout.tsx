@@ -13,13 +13,7 @@ export const metadata: Metadata = {
   title: 'Chủ Sinh Study Planner',
   description: 'Ứng dụng quản lý thời gian và kế hoạch tự học cá nhân',
   manifest: '/manifest.json',
-};
-
-export const viewport = {
   themeColor: '#3b82f6',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({

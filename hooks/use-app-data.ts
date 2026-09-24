@@ -51,6 +51,7 @@ export function useAppData(): AppData {
   useEffect(() => {
     if (!user) {
       setLoading(false);
+      setError('Bạn chưa đăng nhập. Vui lòng đăng nhập để xem cài đặt.');
       return;
     }
 

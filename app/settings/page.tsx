@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import type { Settings } from '@/lib/types';
 
 export default function SettingsPage() {
-  const { settings, loading, refresh } = useAppData();
+  const { settings, loading, refresh, error } = useAppData();
   const [form, setForm] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -40,6 +40,20 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm">
+          <p className="text-lg font-semibold text-foreground">Không thể tải cài đặt</p>
+          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+          <Button className="mt-4" onClick={refresh} variant="outline">
+            Thử lại
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (loading || !form) {
