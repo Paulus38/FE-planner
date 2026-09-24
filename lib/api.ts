@@ -440,6 +440,19 @@ const authApi = {
   },
 };
 
+const onboardingApi = {
+  async getStatus(): Promise<boolean> {
+    const result = await apiFetch('/auth/onboarding');
+    if (result.error) return false;
+    return result.onboarding_completed === true;
+  },
+
+  async markComplete(): Promise<boolean> {
+    const result = await apiFetch('/auth/onboarding/complete', { method: 'POST' });
+    return !result.error;
+  },
+};
+
 const supabaseCompat = {
   auth: authApi,
   from(table: string) {
@@ -448,3 +461,4 @@ const supabaseCompat = {
 };
 
 export { supabaseCompat as supabase };
+export { onboardingApi as onboarding };

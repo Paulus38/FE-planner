@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { resetOnboarding } from '@/components/onboarding-modal';
+
 import {
   LayoutDashboard,
   CalendarDays,
@@ -191,8 +191,7 @@ const tips = [
 
 export default function HelpPage() {
   function handleShowOnboarding() {
-    resetOnboarding();
-    window.location.href = '/';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   return (

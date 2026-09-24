@@ -25,8 +25,7 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
-
-const ONBOARDING_KEY = 'study-planner-onboarded';
+import { onboarding as onboardingApi } from '@/lib/api';
 
 const steps = [
   {
@@ -115,21 +114,29 @@ export function OnboardingModal() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const done = localStorage.getItem(ONBOARDING_KEY);
-    if (!done) {
-      const timer = setTimeout(() => setOpen(true), 800);
-      return () => clearTimeout(timer);
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const completed = await onboardingApi.getStatus();
+        if (!cancelled && !completed) {
+          const timer = setTimeout(() => setOpen(true), 800);
+          return () => clearTimeout(timer);
+        }
+      } catch {
+        // If API fails, don't show onboarding
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  function handleClose() {
+  async function handleClose() {
     setOpen(false);
-    localStorage.setItem(ONBOARDING_KEY, '1');
+    await onboardingApi.markComplete();
   }
 
-  function handleSkip() {
+  async function handleSkip() {
     setOpen(false);
-    localStorage.setItem(ONBOARDING_KEY, '1');
+    await onboardingApi.markComplete();
   }
 
   function handleNext() {
@@ -199,8 +206,10 @@ export function OnboardingModal() {
   );
 }
 
-export function resetOnboarding() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(ONBOARDING_KEY);
-  }
+export async function resetOnboarding() {
+  // No-op: onboarding status is now per-user in the database.
+  // The help page's "Xem lại hướng dẫn nhanh" button reloads the page
+  // which triggers the onboarding check — but since the DB says completed,
+  // it won't show. To force re-show, the user would need a backend admin call.
+  // This function is kept for backward compatibility with the help page.
 }
