@@ -1,6 +1,4 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -16,18 +14,49 @@ function setToken(token: string | null) {
   }
 }
 
-function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('sb-refresh-token');
-}
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
 
-function setRefreshToken(token: string | null) {
-  if (typeof window === 'undefined') return;
-  if (token) {
-    localStorage.setItem('sb-refresh-token', token);
-  } else {
-    localStorage.removeItem('sb-refresh-token');
-  }
+async function tryRefreshToken(): Promise<string | null> {
+  if (isRefreshing && refreshPromise) return refreshPromise;
+  const token = getToken();
+  if (!token) return null;
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setToken(null);
+        cachedAuthState = { user: null, session: null };
+        emitAuthEvent('SIGNED_OUT', null);
+        return null;
+      }
+      const data = await res.json();
+      if (data.token) {
+        setToken(data.token);
+        cachedAuthState = {
+          user: data.user || cachedAuthState.user,
+          session: { user: data.user || cachedAuthState.user, access_token: data.token, refresh_token: '' },
+        };
+        emitAuthEvent('TOKEN_REFRESHED', cachedAuthState.session);
+        return data.token;
+      }
+      return null;
+    } catch {
+      setToken(null);
+      cachedAuthState = { user: null, session: null };
+      emitAuthEvent('SIGNED_OUT', null);
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
 }
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
@@ -40,14 +69,25 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
+  let res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
   });
 
+  if (res.status === 401 && token) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      res = await fetch(`${API_URL}${path}`, {
+        ...options,
+        headers,
+      });
+    }
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: 'Request failed' }));
-    return { error: body.error || `HTTP ${res.status}` };
+    return { error: body.error || body.message || `HTTP ${res.status}` };
   }
 
   return await res.json();
@@ -64,6 +104,9 @@ function emitAuthEvent(event: AuthEvent, session: ApiSession | null) {
 export interface ApiUser {
   id: string;
   email: string;
+  name?: string;
+  onboarding_completed?: boolean;
+  has_sample_data?: boolean;
 }
 
 export interface ApiSession {
@@ -90,11 +133,10 @@ async function loadCachedState(): Promise<AuthState> {
   if (data.user) {
     cachedAuthState = {
       user: data.user,
-      session: { user: data.user, access_token: token, refresh_token: getRefreshToken() || '' },
+      session: { user: data.user, access_token: token, refresh_token: '' },
     };
   } else {
     setToken(null);
-    setRefreshToken(null);
     cachedAuthState = { user: null, session: null };
   }
   return cachedAuthState;
@@ -334,20 +376,19 @@ class DeleteBuilder {
 }
 
 const authApi = {
-  async signUp({ email, password }: { email: string; password: string }) {
+  async signUp({ email, password, name }: { email: string; password: string; name?: string }) {
     const result = await apiFetch('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, name }),
     });
     if (result.error) return { data: null, error: { message: result.error } };
-    if (result.session) {
-      setToken(result.session.access_token);
-      setRefreshToken(result.session.refresh_token);
+    if (result.token) {
+      setToken(result.token);
       cachedAuthState = {
         user: result.user,
-        session: result.session,
+        session: { user: result.user, access_token: result.token, refresh_token: '' },
       };
-      emitAuthEvent('SIGNED_IN', result.session);
+      emitAuthEvent('SIGNED_IN', cachedAuthState.session);
     }
     return { data: result, error: null };
   },
@@ -358,14 +399,13 @@ const authApi = {
       body: JSON.stringify({ email, password }),
     });
     if (result.error) return { data: null, error: { message: result.error } };
-    if (result.session) {
-      setToken(result.session.access_token);
-      setRefreshToken(result.session.refresh_token);
+    if (result.token) {
+      setToken(result.token);
       cachedAuthState = {
         user: result.user,
-        session: result.session,
+        session: { user: result.user, access_token: result.token, refresh_token: '' },
       };
-      emitAuthEvent('SIGNED_IN', result.session);
+      emitAuthEvent('SIGNED_IN', cachedAuthState.session);
     }
     return { data: result, error: null };
   },
@@ -373,44 +413,8 @@ const authApi = {
   async signOut() {
     await apiFetch('/auth/signout', { method: 'POST' });
     setToken(null);
-    setRefreshToken(null);
     cachedAuthState = { user: null, session: null };
     emitAuthEvent('SIGNED_OUT', null);
-  },
-
-  // Google OAuth — redirect browser to Supabase's Google sign-in page
-  // Supabase redirects back to /auth/callback?code=... after Google authenticates the user
-  signInWithGoogle() {
-    if (typeof window === 'undefined') return;
-    const callbackUrl = `${window.location.origin}/auth/callback`;
-    const params = new URLSearchParams({
-      client_id: SUPABASE_ANON_KEY,
-      redirect_uri: `${SUPABASE_URL}/auth/v1/callback`,
-      response_type: 'code',
-      scope: 'openid profile email',
-      flow: 'code',
-      state: callbackUrl,
-    });
-    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&${params.toString()}`;
-  },
-
-  // Google OAuth — exchange the authorization code for session tokens
-  async exchangeCodeForSession(code: string) {
-    const result = await apiFetch('/auth/google/callback', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-    if (result.error) return { data: null, error: { message: result.error } };
-    if (result.session) {
-      setToken(result.session.access_token);
-      setRefreshToken(result.session.refresh_token);
-      cachedAuthState = {
-        user: result.user,
-        session: result.session,
-      };
-      emitAuthEvent('SIGNED_IN', result.session);
-    }
-    return { data: result, error: null };
   },
 
   async getSession() {
@@ -441,15 +445,42 @@ const authApi = {
 };
 
 const onboardingApi = {
-  async getStatus(): Promise<boolean> {
+  async getStatus(): Promise<{ onboarding_completed: boolean; has_sample_data: boolean }> {
     const result = await apiFetch('/auth/onboarding');
-    if (result.error) return false;
-    return result.onboarding_completed === true;
+    if (result.error) return { onboarding_completed: false, has_sample_data: false };
+    return {
+      onboarding_completed: result.onboarding_completed === true,
+      has_sample_data: result.has_sample_data === true,
+    };
   },
 
   async markComplete(): Promise<boolean> {
     const result = await apiFetch('/auth/onboarding/complete', { method: 'POST' });
     return !result.error;
+  },
+};
+
+const seedApi = {
+  async getTemplates() {
+    const result = await apiFetch('/seed/templates');
+    if (result.error) return { templates: [], error: result.error };
+    return { templates: result.templates || [], error: null };
+  },
+
+  async getTemplate(id?: string) {
+    const path = id ? `/seed/template?id=${encodeURIComponent(id)}` : '/seed/template';
+    const result = await apiFetch(path);
+    if (result.error) return { template: null, error: result.error };
+    return { template: result.template || null, error: null };
+  },
+
+  async importSampleData(templateId?: string) {
+    const result = await apiFetch('/seed', {
+      method: 'POST',
+      body: JSON.stringify({ template_id: templateId }),
+    });
+    if (result.error) return { success: false, error: result.error };
+    return { success: true, error: null };
   },
 };
 
@@ -462,3 +493,5 @@ const supabaseCompat = {
 
 export { supabaseCompat as supabase };
 export { onboardingApi as onboarding };
+export { seedApi as seed };
+export { apiFetch };

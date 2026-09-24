@@ -8,6 +8,7 @@ export async function seedDefaultDataForUser(_userId: string) {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
+    body: JSON.stringify({}),
   });
   if (!res.ok) {
     throw new Error('Failed to seed data');

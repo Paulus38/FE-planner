@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/components/auth-provider';
+import { apiFetch } from '@/lib/api';
 import type {
   Settings,
   FixedActivity,
@@ -14,8 +15,6 @@ import type {
   DailyProgress,
 } from '@/lib/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
 export interface AppData {
   settings: Settings | null;
   fixedActivities: FixedActivity[];
@@ -26,6 +25,7 @@ export interface AppData {
   journalEntries: JournalEntry[];
   weeklyGoals: WeeklyGoal[];
   dailyProgress: DailyProgress[];
+  userConfig: Record<string, any>;
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -42,6 +42,7 @@ export function useAppData(): AppData {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
   const [dailyProgress, setDailyProgress] = useState<DailyProgress[]>([]);
+  const [userConfig, setUserConfig] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -60,15 +61,9 @@ export function useAppData(): AppData {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('sb-access-token');
-        const res = await fetch(`${API_URL}/data`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Failed to load data');
-        const d = await res.json();
-
+        const d = await apiFetch('/data');
         if (cancelled) return;
-
+        if (d.error) throw new Error(d.error);
         setSettings(d.settings || null);
         setFixedActivities(d.fixedActivities || []);
         setScheduleEntries(d.scheduleEntries || []);
@@ -78,6 +73,7 @@ export function useAppData(): AppData {
         setJournalEntries(d.journalEntries || []);
         setWeeklyGoals(d.weeklyGoals || []);
         setDailyProgress(d.dailyProgress || []);
+        setUserConfig(d.userConfig || {});
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('Không thể tải dữ liệu. Vui lòng thử lại.');
@@ -101,6 +97,7 @@ export function useAppData(): AppData {
     journalEntries,
     weeklyGoals,
     dailyProgress,
+    userConfig,
     loading,
     error,
     refresh,
