@@ -32,16 +32,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+      const s = data.session;
+      if (s) {
+        const apiSession: ApiSession = {
+          user: { id: s.user.id, email: s.user.email || '' },
+          access_token: s.access_token,
+          refresh_token: s.refresh_token || '',
+        };
+        setSession(apiSession);
+        setUser(apiSession.user);
+      }
       setLoading(false);
     });
 
-    supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (newSession) {
+        const apiSession: ApiSession = {
+          user: { id: newSession.user.id, email: newSession.user.email || '' },
+          access_token: newSession.access_token,
+          refresh_token: newSession.refresh_token || '',
+        };
+        setSession(apiSession);
+        setUser(apiSession.user);
+      } else {
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -57,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(() => {
-    supabase.auth.signInWithGoogle();
+    supabase.auth.signInWithOAuth({ provider: 'google' });
   }, []);
 
   const exchangeCodeForSession = useCallback(async (code: string) => {
