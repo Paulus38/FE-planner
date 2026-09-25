@@ -1,176 +1,111 @@
-# Study Planner — Frontend
+# Study Planner Frontend
 
-Giao diện người dùng cho ứng dụng quản lý thời gian và kế hoạch tự học dành cho chủng sinh. Giao tiếp với backend API qua REST, không kết nối trực tiếp đến database.
+Giao diện web của Study Planner, xây dựng bằng Next.js App Router, TypeScript và Tailwind CSS. Ứng dụng cung cấp dashboard, lịch học, tự học, task, đọc sách, nhật ký, thống kê và các màn hình quản lý cá nhân.
 
-## Tính năng
+## Yêu cầu
 
-- **Dashboard** — Tổng quan hoạt động hiện tại, countdown đến hoạt động tiếp theo
-- **Lịch hôm nay** — Timeline chi tiết các hoạt động trong ngày
-- **Lịch tuần** — Xem lịch tổng quan theo tuần
-- **Thời khóa biểu** — Quản lý lịch học cố định T2–T6
-- **Tự học** — Smart Planner tự động tạo lịch tự học theo ưu tiên
-- **Tiếng Anh** — Theo dõi 7 kỹ năng với mục tiêu tỷ lệ 50%
-- **Nhật ký thiêng liêng** — 6 câu hỏi phản tỉnh, theo dõi chuỗi viết
-- **Đọc sách** — Theo dõi tiến độ đọc, số trang/ngày
-- **Luyện đàn** — Ghi nhận thời gian luyện tập
-- **Thống kê** — Biểu đồ thời gian học, tỷ lệ tiếng Anh
-- **Tổng kết tuần** — Phản tỉnh tuần, kế hoạch tuần tới
-- **Cài đặt** — Tùy chỉnh giờ giấc, mục tiêu, thông báo
-- **Hướng dẫn** — Trang hướng dẫn sử dụng + onboarding modal
-- **Dark mode** — Hỗ trợ chế độ tối/sáng
-- **Responsive** — Tối ưu cho cả mobile và desktop
-
-## Công nghệ
-
-| Công nghệ | Vai trò |
-|-----------|---------|
-| Next.js 13 (App Router) | Framework React, SSR/SSG |
-| TypeScript | Ngôn ngữ lập trình |
-| Tailwind CSS | Styling |
-| shadcn/ui + Radix UI | Component library |
-| Recharts | Biểu đồ thống kê |
-| Lucide React | Icons |
-| date-fns | Xử lý ngày tháng |
-
-## Cấu trúc thư mục
-
-```
-frontend/
-├── app/                        # Next.js App Router pages
-│   ├── layout.tsx              # Root layout (AuthProvider + AppShell + Onboarding)
-│   ├── page.tsx                # Dashboard
-│   ├── login/page.tsx          # Đăng nhập / Đăng ký
-│   ├── today/page.tsx          # Lịch hôm nay
-│   ├── calendar/page.tsx       # Lịch tuần
-│   ├── schedule/page.tsx       # Thời khóa biểu
-│   ├── self-study/page.tsx     # Tự học (Smart Planner)
-│   ├── english/page.tsx        # Tiếng Anh
-│   ├── journal/page.tsx        # Nhật ký thiêng liêng
-│   ├── books/page.tsx          # Đọc sách
-│   ├── instrument/page.tsx     # Luyện đàn
-│   ├── statistics/page.tsx     # Thống kê
-│   ├── weekly-review/page.tsx  # Tổng kết tuần
-│   ├── settings/page.tsx       # Cài đặt
-│   ├── help/page.tsx           # Hướng dẫn sử dụng
-│   └── globals.css             # Global styles + Tailwind
-│
-├── components/
-│   ├── auth-provider.tsx       # Context quản lý phiên đăng nhập
-│   ├── app-shell.tsx           # Layout wrapper (bảo vệ route, sidebar)
-│   ├── sidebar.tsx             # Thanh điều hướng
-│   ├── user-menu.tsx           # Menu người dùng (đăng xuất)
-│   ├── onboarding-modal.tsx    # Hướng dẫn nhanh khi đăng nhập lần đầu
-│   ├── theme-provider.tsx      # Dark/light mode provider
-│   ├── theme-toggle.tsx        # Nút chuyển dark/light
-│   └── ui/                     # shadcn/ui components (60+ components)
-│
-├── hooks/
-│   ├── use-app-data.ts         # Hook tải tất cả dữ liệu từ backend API
-│   └── use-toast.ts            # Toast notifications
-│
-├── lib/
-│   ├── api.ts                  # API client + auth (gọi backend REST API)
-│   ├── scheduler.ts            # Logic Smart Planner (tạo lịch tự học)
-│   ├── constants.ts            # Hằng số (màu sắc, nhãn, cấu hình)
-│   ├── types.ts                # TypeScript interfaces cho database tables
-│   └── utils.ts                # Tiện ích (cn, formatDate, v.v.)
-│
-├── public/
-│   ├── icon.svg                # App icon
-│   └── manifest.json           # PWA manifest
-│
-├── next.config.js              # Next.js config
-├── tailwind.config.ts          # Tailwind theme
-├── tsconfig.json               # TypeScript config
-├── package.json                # Dependencies + scripts
-├── .env.example                # Biến môi trường mẫu
-└── .gitignore
-```
-
-## Biến môi trường
-
-Sao chép `.env.example` thành `.env` và điền giá trị:
-
-```bash
-cp .env.example .env
-```
-
-| Biến | Mô tả | Ví dụ |
-|------|-------|------|
-| `NEXT_PUBLIC_API_URL` | URL backend API | `http://localhost:3001/api` |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL Supabase project | `https://xxxx.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public) | `eyJ...` |
-
-> `NEXT_PUBLIC_` prefix để biến có thể truy cập từ browser.
+- Node.js 18 trở lên
+- npm 9 trở lên
+- Backend Study Planner đang chạy
 
 ## Cài đặt và chạy
 
-### Yêu cầu
-
-- Node.js 18+
-- npm 9+
-
-### Chạy local
-
 ```bash
-# 1. Cài dependencies
 npm install
-
-# 2. Tạo file .env
-cp .env.example .env
-# Chỉnh sửa .env nếu cần thay đổi URL backend
-
-# 3. Chạy dev server
 npm run dev
-
-# 4. Mở trình duyệt
-# http://localhost:3000
 ```
 
-### Build production
+Mở `http://localhost:3000`.
+
+Trước khi chạy, tạo file `.env.local` với nội dung:
+
+Kiểm tra và build production:
 
 ```bash
+npm run typecheck
 npm run build
 npm start
 ```
 
-### Kiểm tra TypeScript
+## Biến môi trường
 
-```bash
-npm run typecheck
+Tạo `.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
+
+`NEXT_PUBLIC_API_URL` là URL REST API của backend. Frontend dùng token đăng nhập để gọi các endpoint được bảo vệ.
+
+## Các màn hình
+
+| Route | Chức năng |
+|---|---|
+| `/` | Dashboard, tiến độ hôm nay, streak và lịch sử gần đây |
+| `/today` | Timeline và đánh dấu phiên học hoàn thành |
+| `/calendar` | Lịch theo tuần |
+| `/schedule` | Tạo thời khóa biểu, hỗ trợ tuần chẵn/lẻ |
+| `/self-study` | Smart Planner và phiên tự học |
+| `/tasks` | Tạo, cập nhật, hoàn thành task |
+| `/books` | Quản lý sách, tiến độ trang, lịch sử sách đã đọc và chi tiết sách |
+| `/english` | Theo dõi các kỹ năng tiếng Anh |
+| `/journal` | Nhật ký thiêng liêng |
+| `/instrument` | Ghi nhận luyện đàn |
+| `/courses` | Danh sách môn học |
+| `/courses/[id]` | Chi tiết môn học, lịch, task và phiên học |
+| `/statistics` | Thống kê học tập |
+| `/weekly-review` | Tổng kết tuần |
+| `/settings` | Cài đặt thời gian, mục tiêu và thông báo |
+| `/help` | Hướng dẫn sử dụng |
+
+Menu sidebar chứa các route chính và các môn học được bật `show_in_nav`.
+
+## Luồng dữ liệu
+
+`lib/api.ts` là lớp gọi REST API và quản lý token. `hooks/use-app-data.ts` tải dữ liệu tổng hợp từ `/api/data` để dùng chung giữa Dashboard, lịch, task và thống kê. Các thao tác cập nhật dùng cùng API client tương thích Supabase trong `lib/api.ts`; frontend không nên tự tạo logic phân quyền.
+
+Luồng sử dụng khuyến nghị:
+
+1. Đăng ký hoặc đăng nhập.
+2. Hoàn tất onboarding và kiểm tra `/settings`.
+3. Tạo thời khóa biểu, task và sách.
+4. Vào `/self-study` để tạo kế hoạch tự học.
+5. Đánh dấu phiên học/task/sách đã hoàn thành.
+6. Kiểm tra tiến độ tại `/today`, `/` và `/statistics`.
+
+## Cấu trúc thư mục
+
+```text
+frontend/
+├── app/                 # Các route của Next.js App Router
+├── components/          # AppShell, Sidebar, auth, onboarding, UI
+├── hooks/               # use-app-data
+├── lib/
+│   ├── api.ts           # REST client và auth token
+│   ├── scheduler.ts     # Smart Planner, timeline, streak
+│   ├── constants.ts     # Nhãn tiếng Việt, màu và cấu hình
+│   └── types.ts         # Kiểu dữ liệu ứng dụng
+├── public/
+├── package.json
+└── next.config.js
+```
+
+## Quy tắc nghiệp vụ chính
+
+- Task có thể đánh dấu hoàn thành trước hạn; hạn chỉ dùng để ưu tiên/lọc.
+- Smart Planner ưu tiên task `pending` và `in_progress`.
+- Phiên học hoàn thành dùng `actual_min` hoặc `planned_min` cho thống kê.
+- Streak dựa trên `daily_progress.plan_completed`.
+- Lịch `all`, `odd`, `even`, `biweekly`, `week_1_and_3`, `week_2_and_4` được lọc theo ngày hiện tại.
+- Sách lưu tiến độ trang, trạng thái `reading/completed/paused`, tác giả, ngày bắt đầu, ngày dự kiến và ghi chú.
 
 ## Deploy
 
-### Netlify (khuyến nghị)
+### Vercel hoặc Netlify
 
-1. Push code lên GitHub
-2. Vào [netlify.com](https://netlify.com) → "Add new site" → "Import from Git"
-3. Chọn repo, Netlify tự nhận diện Next.js
-4. Thêm biến môi trường trong Netlify settings:
-   - `NEXT_PUBLIC_API_URL` — URL backend production
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. Deploy
+1. Chọn thư mục `frontend` làm project.
+2. Đặt `NEXT_PUBLIC_API_URL` trỏ tới backend production.
+3. Build command: `npm run build`.
+4. Start command (nếu nền tảng yêu cầu): `npm start`.
 
-### Vercel
-
-1. Push code lên GitHub
-2. Vào [vercel.com](https://vercel.com) → "Add New Project"
-3. Chọn repo, Vercel tự nhận diện Next.js
-4. Thêm biến môi trường (same as above)
-5. Deploy
-
-## Liên kết với Backend
-
-Frontend gọi backend API qua `NEXT_PUBLIC_API_URL`. Backend xử lý:
-- Đăng ký / đăng nhập (Supabase Auth)
-- CRUD tất cả bảng dữ liệu (qua route `/api/:table`)
-- Tải tất cả dữ liệu người dùng (route `/api/data`)
-- Tạo dữ liệu mẫu khi đăng ký mới (route `/api/seed`)
-
-Xem README của backend để biết cách chạy backend.
-
-## Giấy phép
-
-Dự án nội bộ, không phân phối công khai.
+Đảm bảo backend cho phép domain frontend trong `FRONTEND_URL` và CORS.
