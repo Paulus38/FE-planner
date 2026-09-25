@@ -11,11 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Settings as SettingsIcon, Save, Bell, Clock, Target } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Settings } from '@/lib/types';
+import type { FixedActivity, Settings } from '@/lib/types';
 
 export default function SettingsPage() {
-  const { settings, loading, refresh, error } = useAppData();
+  const { settings, fixedActivities, loading, refresh, error } = useAppData();
   const [form, setForm] = useState<Settings | null>(null);
+  const [activities, setActivities] = useState<FixedActivity[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -23,6 +24,10 @@ export default function SettingsPage() {
       setForm(settings);
     }
   }, [settings]);
+
+  useEffect(() => {
+    setActivities(fixedActivities);
+  }, [fixedActivities]);
 
   async function handleSave() {
     if (!form) return;
@@ -33,6 +38,20 @@ export default function SettingsPage() {
         .update({ ...form, updated_at: new Date().toISOString() })
         .eq('id', form.id);
       if (error) throw error;
+      const activityResults = await Promise.all(
+        activities.map((activity) =>
+          supabase
+            .from('fixed_activities')
+            .update({
+              name: activity.name,
+              start_time: activity.start_time,
+              end_time: activity.end_time,
+            })
+            .eq('id', activity.id)
+        )
+      );
+      const activityError = activityResults.find((result) => result.error)?.error;
+      if (activityError) throw activityError;
       toast.success('Đã lưu cài đặt.');
       refresh();
     } catch {
@@ -103,6 +122,32 @@ export default function SettingsPage() {
             <TimeField label="Ăn tối (bắt đầu)" value={form.dinner_start} onChange={(v) => setForm({ ...form, dinner_start: v })} />
             <TimeField label="Ăn tối (kết thúc)" value={form.dinner_end} onChange={(v) => setForm({ ...form, dinner_end: v })} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lịch sinh hoạt mặc định</CardTitle>
+          <CardDescription>Đổi tên hoặc thời gian các hoạt động được tạo khi bạn chọn tự tùy chỉnh.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {activities.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Chưa có hoạt động cố định. Hãy tải lại dữ liệu hoặc tạo lịch mặc định từ màn hình đăng nhập.</p>
+          ) : (
+            activities.map((activity, index) => (
+              <div key={activity.id} className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[1fr_140px_140px] sm:items-end">
+                <div className="space-y-2">
+                  <Label>Tên hoạt động {index + 1}</Label>
+                  <Input
+                    value={activity.name}
+                    onChange={(event) => setActivities((current) => current.map((item) => item.id === activity.id ? { ...item, name: event.target.value } : item))}
+                  />
+                </div>
+                <TimeField label="Bắt đầu" value={activity.start_time} onChange={(value) => setActivities((current) => current.map((item) => item.id === activity.id ? { ...item, start_time: value } : item))} />
+                <TimeField label="Kết thúc" value={activity.end_time} onChange={(value) => setActivities((current) => current.map((item) => item.id === activity.id ? { ...item, end_time: value } : item))} />
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

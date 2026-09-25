@@ -474,10 +474,10 @@ const seedApi = {
     return { template: result.template || null, error: null };
   },
 
-  async importSampleData(templateId?: string) {
+  async importSampleData(templateId?: string, customize = false) {
     const result = await apiFetch('/seed', {
       method: 'POST',
-      body: JSON.stringify({ template_id: templateId }),
+      body: JSON.stringify({ template_id: templateId, customize }),
     });
     if (result.error) return { success: false, error: result.error };
     return { success: true, error: null };

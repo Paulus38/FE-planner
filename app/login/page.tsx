@@ -88,9 +88,22 @@ export default function LoginPage() {
   }
 
   async function handleSkipSample() {
-    await onboardingApi.markComplete();
-    setShowSamplePrompt(false);
-    router.replace('/');
+    setSampleLoading(true);
+    setError(null);
+    try {
+      const { error: importError } = await seed.importSampleData(undefined, true);
+      if (importError) {
+        setError(importError);
+        return;
+      }
+      await onboardingApi.markComplete();
+      setShowSamplePrompt(false);
+      router.replace('/');
+    } catch {
+      setError('Không thể tạo lịch mặc định. Vui lòng thử lại.');
+    } finally {
+      setSampleLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
