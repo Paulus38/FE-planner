@@ -27,6 +27,10 @@ export const CATEGORY_COLORS: Record<ActivityCategory, { bg: string; text: strin
   study: { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-300', border: 'border-cyan-400/30', dot: 'bg-cyan-500', label: 'Tự học' },
 };
 
+export function getCategoryColors(category: string | undefined) {
+  return CATEGORY_COLORS[category as ActivityCategory] || CATEGORY_COLORS.fixed;
+}
+
 export const SUBJECT_COLORS: Record<string, string> = {
   english: '#3b82f6',
   vietnamese: '#10b981',

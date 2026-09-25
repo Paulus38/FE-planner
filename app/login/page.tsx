@@ -22,6 +22,9 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSamplePrompt, setShowSamplePrompt] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
+  const [sampleTemplates, setSampleTemplates] = useState<Array<{ id: string; name: string; is_default: boolean }>>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -39,10 +42,37 @@ export default function LoginPage() {
     }
   }
 
-  async function handleImportSample() {
+  useEffect(() => {
+    if (!showSamplePrompt || !user) return;
+
+    async function loadSampleTemplates() {
+      setTemplatesLoading(true);
+      setError(null);
+      try {
+        const { templates, error: templatesError } = await seed.getTemplates();
+        if (templatesError) {
+          setError(templatesError);
+          setSampleTemplates([]);
+          return;
+        }
+
+        setSampleTemplates(templates || []);
+        const defaultTemplate = (templates || []).find((template: { id: string; name: string; is_default: boolean }) => template.is_default);
+        setSelectedTemplateId(defaultTemplate?.id || (templates || [])[0]?.id || null);
+      } catch {
+        setError('Không thể tải dữ liệu mẫu. Vui lòng thử lại.');
+      } finally {
+        setTemplatesLoading(false);
+      }
+    }
+
+    loadSampleTemplates();
+  }, [showSamplePrompt, user]);
+
+  async function handleImportSample(templateId?: string) {
     setSampleLoading(true);
     try {
-      const { error: importError } = await seed.importSampleData();
+      const { error: importError } = await seed.importSampleData(templateId || selectedTemplateId || undefined);
       if (importError) {
         setError(importError);
       } else {
@@ -119,8 +149,9 @@ export default function LoginPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <button
-                onClick={handleImportSample}
-                disabled={sampleLoading}
+                type="button"
+                onClick={() => handleImportSample(selectedTemplateId || undefined)}
+                disabled={sampleLoading || templatesLoading}
                 className="group flex flex-col items-center gap-3 rounded-xl border-2 border-border p-5 text-center transition-all hover:border-primary hover:bg-primary/5 disabled:opacity-50"
               >
                 {sampleLoading ? (
@@ -137,6 +168,7 @@ export default function LoginPage() {
               </button>
 
               <button
+                type="button"
                 onClick={handleSkipSample}
                 disabled={sampleLoading}
                 className="group flex flex-col items-center gap-3 rounded-xl border-2 border-border p-5 text-center transition-all hover:border-primary hover:bg-primary/5 disabled:opacity-50"
@@ -150,6 +182,38 @@ export default function LoginPage() {
                 </div>
               </button>
             </div>
+
+            {templatesLoading ? (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Đang tải danh sách mẫu...
+              </div>
+            ) : sampleTemplates.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Chọn mẫu bạn muốn dùng</p>
+                <div className="grid gap-2">
+                  {sampleTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => setSelectedTemplateId(template.id)}
+                      className={`flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                        selectedTemplateId === template.id
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-border bg-background hover:border-primary/50'
+                      }`}
+                    >
+                      <span className="font-medium">{template.name}</span>
+                      {template.is_default && (
+                        <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                          Mặc định
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="rounded-lg bg-muted/50 p-3 text-center text-sm text-muted-foreground">
               Bạn có thể thay đổi mọi thứ sau khi thiết lập. Dữ liệu mẫu chỉ là điểm khởi đầu.

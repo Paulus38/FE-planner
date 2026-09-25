@@ -12,7 +12,7 @@ import {
   dateStr,
   todayStr,
 } from '@/lib/scheduler';
-import { CATEGORY_COLORS, SUBJECT_NAMES } from '@/lib/constants';
+import { getCategoryColors, SUBJECT_NAMES } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
@@ -107,7 +107,7 @@ export default function TodayPage() {
 
       <div className="space-y-2">
         {timeline.map((activity) => {
-          const cat = CATEGORY_COLORS[activity.category];
+          const cat = getCategoryColors(activity.category);
           const startMin = timeToMinutes(activity.start_time);
           let endMin = timeToMinutes(activity.end_time);
           if (endMin < startMin) endMin += 24 * 60;
@@ -159,7 +159,7 @@ function ActivityRow({
   onToggle: () => void;
   onUpdateMin: (sessionId: string, min: number) => void;
 }) {
-  const cat = CATEGORY_COLORS[activity.category];
+  const cat = getCategoryColors(activity.category);
   const [expanded, setExpanded] = useState(false);
   const [actualMin, setActualMin] = useState(activity.actual_min?.toString() || '');
 

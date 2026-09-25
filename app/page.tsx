@@ -18,7 +18,7 @@ import {
   timeToMinutes,
   getCurrentMinutes,
 } from '@/lib/scheduler';
-import { CATEGORY_COLORS } from '@/lib/constants';
+import { getCategoryColors } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -104,7 +104,7 @@ export default function DashboardPage() {
   }
 
   const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const currentCat = current ? CATEGORY_COLORS[current.category] : null;
+  const currentCat = current ? getCategoryColors(current.category) : null;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -281,7 +281,7 @@ function StatCard({
 }
 
 function TimelineRow({ activity, now }: { activity: TimelineActivity; now: Date }) {
-  const cat = CATEGORY_COLORS[activity.category];
+  const cat = getCategoryColors(activity.category);
   const currentMin = getCurrentMinutes();
   const startMin = timeToMinutes(activity.start_time);
   let endMin = timeToMinutes(activity.end_time);

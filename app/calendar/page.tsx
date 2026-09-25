@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '@/hooks/use-app-data';
 import { buildTimelineForDay, dateStr, getWeekDates, addDays, formatVietnameseDate } from '@/lib/scheduler';
-import { CATEGORY_COLORS, WEEKDAY_NAMES_SHORT } from '@/lib/constants';
+import { getCategoryColors, WEEKDAY_NAMES_SHORT } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +118,7 @@ export default function CalendarPage() {
                   </div>
                   <div className="space-y-0.5">
                     {activities.slice(0, 5).map((a) => {
-                      const cat = CATEGORY_COLORS[a.category];
+                      const cat = getCategoryColors(a.category);
                       return (
                         <div key={a.id} className="flex items-center gap-1">
                           <span className={`h-1.5 w-1.5 rounded-full ${cat.dot} shrink-0`} />
@@ -215,7 +215,7 @@ function DayTimeline({ activities }: { activities: TimelineActivity[] }) {
       <CardContent>
         <div className="space-y-1">
           {activities.map((a) => {
-            const cat = CATEGORY_COLORS[a.category];
+            const cat = getCategoryColors(a.category);
             const startMin = parseInt(a.start_time.split(':')[0]) * 60 + parseInt(a.start_time.split(':')[1]);
             let endMin = parseInt(a.end_time.split(':')[0]) * 60 + parseInt(a.end_time.split(':')[1]);
             if (endMin < startMin) endMin += 24 * 60;
