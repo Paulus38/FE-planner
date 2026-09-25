@@ -75,6 +75,23 @@ export default function SelfStudyPage() {
     ];
   }, [ratio.total, settings, subjects]);
 
+  async function toggleSession(sessionId: string, status: string) {
+    const nextStatus = status === 'completed' ? 'planned' : 'completed';
+    const { error } = await supabase.from('study_sessions').update({
+      status: nextStatus,
+      actual_min: nextStatus === 'completed'
+        ? sessions.find((session) => session.id === sessionId)?.planned_min ?? null
+        : null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', sessionId);
+    if (error) {
+      toast.error('Không thể cập nhật trạng thái phiên học.');
+      return;
+    }
+    toast.success(nextStatus === 'completed' ? 'Đã hoàn thành phiên học.' : 'Đã bỏ hoàn thành phiên học.');
+    refresh();
+  }
+
   async function handleGeneratePlan() {
     if (!settings) return;
     setGenerating(true);
@@ -196,11 +213,15 @@ export default function SelfStudyPage() {
                         </p>
                       </div>
                       {s.status === 'completed' ? (
-                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Done</Badge>
+                        <Button size="sm" variant="outline" onClick={() => toggleSession(s.id, s.status)}>
+                          <CheckCircle2 className="h-4 w-4 text-green-600" /> Đã xong
+                        </Button>
                       ) : s.status === 'skipped' ? (
-                        <Badge variant="secondary">Skip</Badge>
+                        <Badge variant="secondary">Đã bỏ qua</Badge>
                       ) : (
-                        <Badge variant="outline">{getSubjectName(subjects, s.subject_code)}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => toggleSession(s.id, s.status)}>
+                          Đánh dấu đã học
+                        </Button>
                       )}
                     </div>
                   );

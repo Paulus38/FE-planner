@@ -31,6 +31,40 @@ export function getCategoryColors(category: string | undefined) {
   return CATEGORY_COLORS[category as ActivityCategory] || CATEGORY_COLORS.fixed;
 }
 
+export const TASK_STATUS_LABELS: Record<string, string> = {
+  pending: 'Chờ làm',
+  in_progress: 'Đang làm',
+  completed: 'Đã hoàn thành',
+  skipped: 'Đã bỏ qua',
+};
+
+export const TASK_PRIORITY_LABELS: Record<number, string> = {
+  1: 'Cao',
+  2: 'Trung bình',
+  3: 'Thấp',
+};
+
+export const SESSION_TYPE_LABELS: Record<string, string> = {
+  class: 'Học chính khóa',
+  study: 'Tự học',
+  reading: 'Đọc sách',
+  labor: 'Lao động',
+};
+
+export const WEEK_PATTERN_LABELS: Record<string, string> = {
+  all: 'Mọi tuần',
+  weekly: 'Mọi tuần',
+  odd: 'Tuần lẻ',
+  even: 'Tuần chẵn',
+  biweekly: 'Cách tuần',
+  week_1_and_3: 'Tuần 1 và 3 trong tháng',
+  week_2_and_4: 'Tuần 2 và 4 trong tháng',
+};
+
+export function getWeekPatternLabel(pattern?: string | null): string {
+  return WEEK_PATTERN_LABELS[pattern || 'all'] || 'Mọi tuần';
+}
+
 export const SUBJECT_COLORS: Record<string, string> = {
   english: '#3b82f6',
   vietnamese: '#10b981',

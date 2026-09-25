@@ -60,9 +60,42 @@ export default function TodayPage() {
     if (error) {
       toast.error('Không thể cập nhật. Vui lòng thử lại.');
     } else {
+      await syncDailyProgress(session.id, newStatus === 'completed');
       toast.success(newStatus === 'completed' ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu.');
       refresh();
     }
+  }
+
+  async function syncDailyProgress(sessionId: string, completed: boolean) {
+    const daySessions = sessions.filter((item) => item.date === ds);
+    const completedSessions = daySessions.filter((item) => item.id === sessionId
+      ? completed
+      : item.status === 'completed');
+    const taskItems = tasks.filter((task) => task.due_date === ds);
+    const payload = {
+      progress_date: ds,
+      english_min: completedSessions.filter((item) => item.subject_code === 'english').reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      vietnamese_min: completedSessions.filter((item) => item.subject_code === 'vietnamese').reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      instrument_min: completedSessions.filter((item) => item.subject_code === 'instrument').reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      reading_min: completedSessions.filter((item) => item.subject_code === 'reading').reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      homework_min: completedSessions.filter((item) => item.subject_code === 'homework').reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      journal_min: completedSessions.filter((item) => item.subject_code === 'journal').reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      total_study_min: completedSessions.reduce((sum, item) => sum + (item.actual_min ?? item.planned_min), 0),
+      tasks_completed: taskItems.filter((task) => task.status === 'completed').length,
+      tasks_total: taskItems.length,
+      journal_completed: completedSessions.some((item) => item.subject_code === 'journal'),
+      plan_completed: selfStudyItems.length > 0 && selfStudyItems.every((item) => item.id === `session-${sessionId}` ? completed : item.status === 'completed'),
+      english_ratio: 0,
+    };
+    const existing = await supabase.from('daily_progress').select('id').eq('progress_date', ds).maybeSingle();
+    if (existing.error) {
+      toast.error('Không thể cập nhật streak: ' + existing.error);
+      return;
+    }
+    const result = existing.data
+      ? await supabase.from('daily_progress').update(payload).eq('id', existing.data.id)
+      : await supabase.from('daily_progress').insert(payload);
+    if (result.error) toast.error('Không thể cập nhật tiến độ ngày: ' + result.error);
   }
 
   async function updateActualMinutes(sessionId: string, min: number) {

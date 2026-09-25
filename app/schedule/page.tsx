@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/lib/api';
-import { WEEKDAY_NAMES } from '@/lib/constants';
+import { SESSION_TYPE_LABELS, WEEKDAY_NAMES, getWeekPatternLabel } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,6 +190,7 @@ export default function SchedulePage() {
                   <TableHead className="w-32">Giờ</TableHead>
                   <TableHead>Môn học</TableHead>
                   <TableHead className="hidden sm:table-cell w-28">Lặp lại</TableHead>
+                  <TableHead className="hidden sm:table-cell w-40">Tuần học</TableHead>
                   <TableHead className="hidden sm:table-cell w-28">Loại</TableHead>
                   <TableHead className="w-24">Thao tác</TableHead>
                 </TableRow>
@@ -228,7 +229,14 @@ export default function SchedulePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <span className="text-sm text-muted-foreground capitalize">{entry.session_type}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {getWeekPatternLabel(entry.week_pattern)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <span className="text-sm text-muted-foreground">
+                          {SESSION_TYPE_LABELS[entry.session_type] || entry.session_type}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">

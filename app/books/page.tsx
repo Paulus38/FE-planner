@@ -10,13 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { BookMarked, Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { BookMarked, Plus, Pencil, Trash2, BookOpen, Eye, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Book } from '@/lib/types';
 
 export default function BooksPage() {
   const { loading, refresh } = useAppData();
   const [books, setBooks] = useState<Book[]>([]);
+  const [filter, setFilter] = useState<'all' | 'reading' | 'completed' | 'paused'>('all');
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [form, setForm] = useState({
@@ -130,6 +132,19 @@ export default function BooksPage() {
     refresh();
   }
 
+  const filteredBooks = books.filter((book) => filter === 'all' || book.status === filter);
+  const completedBooks = books.filter((book) => book.status === 'completed');
+  const totalPagesRead = books.reduce((sum, book) => sum + book.current_page, 0);
+
+  function formatDate(value?: string | null) {
+    if (!value) return 'Chưa cập nhật';
+    return new Intl.DateTimeFormat('vi-VN').format(new Date(`${value.slice(0, 10)}T00:00:00`));
+  }
+
+  function statusLabel(status: Book['status']) {
+    return status === 'completed' ? 'Đã đọc xong' : status === 'paused' ? 'Tạm dừng' : 'Đang đọc';
+  }
+
   if (loading) {
     return <div className="flex h-[60vh] items-center justify-center text-muted-foreground">Đang tải...</div>;
   }
@@ -149,8 +164,47 @@ export default function BooksPage() {
         </Button>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm text-muted-foreground">Tổng số sách</p>
+            <p className="mt-1 text-2xl font-bold">{books.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm text-muted-foreground">Đã đọc xong</p>
+            <p className="mt-1 text-2xl font-bold text-green-600">{completedBooks.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm text-muted-foreground">Tổng trang đã đọc</p>
+            <p className="mt-1 text-2xl font-bold text-violet-600">{totalPagesRead.toLocaleString('vi-VN')}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {([
+          ['all', 'Tất cả'],
+          ['reading', 'Đang đọc'],
+          ['completed', 'Đã đọc xong'],
+          ['paused', 'Tạm dừng'],
+        ] as const).map(([value, label]) => (
+          <Button
+            key={value}
+            size="sm"
+            variant={filter === value ? 'default' : 'outline'}
+            onClick={() => setFilter(value)}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
-        {books.map((book) => {
+        {filteredBooks.map((book) => {
           const pct = book.total_pages > 0 ? Math.round((book.current_page / book.total_pages) * 100) : 0;
           const remaining = book.total_pages - book.current_page;
           const daysToFinish = book.daily_goal_pages > 0 ? Math.ceil(remaining / book.daily_goal_pages) : 0;
@@ -164,12 +218,18 @@ export default function BooksPage() {
                       <BookOpen className="h-5 w-5 text-violet-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{book.title}</h3>
+                      <button className="text-left font-semibold truncate hover:text-primary" onClick={() => setSelectedBook(book)}>
+                        {book.title}
+                      </button>
                       {book.author && <p className="text-sm text-muted-foreground">{book.author}</p>}
+                      <Badge variant="outline" className="mt-1">{statusLabel(book.status)}</Badge>
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(book)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedBook(book)} title="Xem thông tin">
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(book)} title="Chỉnh sửa">
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(book.id)}>
@@ -216,15 +276,70 @@ export default function BooksPage() {
           );
         })}
 
-        {books.length === 0 && (
+        {filteredBooks.length === 0 && (
           <Card className="col-span-full">
             <CardContent className="py-12 text-center">
               <BookMarked className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-              <p className="text-muted-foreground">Chưa có sách nào. Hãy thêm sách để bắt đầu theo dõi.</p>
+              <p className="text-muted-foreground">
+                {books.length === 0 ? 'Chưa có sách nào. Hãy thêm sách để bắt đầu theo dõi.' : 'Không có sách trong bộ lọc này.'}
+              </p>
             </CardContent>
           </Card>
         )}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lịch sử sách đã đọc</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {completedBooks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Khi bạn đọc hết một cuốn, sách sẽ xuất hiện tại đây.</p>
+          ) : (
+            <div className="space-y-3">
+              {completedBooks.map((book) => (
+                <button key={book.id} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/50" onClick={() => setSelectedBook(book)}>
+                  <span>
+                    <span className="block font-medium">{book.title}</span>
+                    <span className="text-xs text-muted-foreground">{book.author || 'Chưa có tác giả'} · {book.total_pages} trang</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">{formatDate(book.updated_at)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!selectedBook} onOpenChange={(open) => !open && setSelectedBook(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedBook?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedBook && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Badge>{statusLabel(selectedBook.status)}</Badge>
+                <span className="text-sm text-muted-foreground">{selectedBook.author || 'Chưa có tác giả'}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><p className="text-muted-foreground">Tiến độ</p><p className="font-medium">{selectedBook.current_page}/{selectedBook.total_pages} trang</p></div>
+                <div><p className="text-muted-foreground">Mục tiêu mỗi ngày</p><p className="font-medium">{selectedBook.daily_goal_pages} trang</p></div>
+                <div><p className="text-muted-foreground">Ngày bắt đầu</p><p className="font-medium">{formatDate(selectedBook.start_date)}</p></div>
+                <div><p className="text-muted-foreground">Dự kiến hoàn thành</p><p className="font-medium">{formatDate(selectedBook.target_date)}</p></div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarDays className="h-4 w-4" /> Cập nhật lần cuối: {formatDate(selectedBook.updated_at)}
+              </div>
+              {selectedBook.note ? (
+                <div className="rounded-lg bg-muted p-3 text-sm"><p className="font-medium">Ghi chú</p><p className="mt-1 whitespace-pre-wrap">{selectedBook.note}</p></div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Chưa có ghi chú cho cuốn sách này.</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

@@ -19,7 +19,7 @@ import {
   getCurrentMinutes,
 } from '@/lib/scheduler';
 import { getCategoryColors } from '@/lib/constants';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle2, AlertCircle, TrendingUp, BookOpen, ChevronRight } from 'lucide-react';
@@ -48,6 +48,9 @@ export default function DashboardPage() {
 
   const today = new Date();
   const todayDateStr = todayStr();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayDateStr = dateStr(yesterday);
 
   const timeline = useMemo(
     () => buildTimelineForDay(today, fixedActivities, scheduleEntries, sessions),
@@ -67,6 +70,10 @@ export default function DashboardPage() {
   const completedToday = todaySessions.filter((s) => s.status === 'completed').length;
   const totalToday = timeline.filter((a) => a.is_self_study || a.category === 'journal').length;
   const completionPct = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
+  const yesterdaySessions = sessions.filter((session) => session.date === yesterdayDateStr);
+  const yesterdayCompleted = yesterdaySessions.filter((session) => session.status === 'completed');
+  const yesterdayTasks = tasks.filter((task) => task.due_date === yesterdayDateStr);
+  const yesterdayCompletedTasks = yesterdayTasks.filter((task) => task.status === 'completed');
 
   const weekSessions = useMemo(() => {
     const monday = new Date(today);
@@ -217,6 +224,37 @@ export default function DashboardPage() {
           progress={tasks.length > 0 ? Math.round(((tasks.length - pendingTasks.length) / tasks.length) * 100) : 100}
         />
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Hôm qua bạn đã làm gì?</CardTitle>
+            <CardDescription>{yesterdayDateStr}</CardDescription>
+          </div>
+          <Link href="/today" className="text-sm text-primary hover:underline">Xem lịch hôm nay →</Link>
+        </CardHeader>
+        <CardContent>
+          {yesterdaySessions.length === 0 && yesterdayTasks.length === 0 ? (
+            <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+              Chưa có phiên học hoặc nhiệm vụ có hạn vào ngày hôm qua.
+              Hãy tạo kế hoạch ở mục <Link href="/self-study" className="font-medium text-primary hover:underline">Tự học</Link>.
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border p-3">
+                <p className="text-sm font-medium">Phiên học</p>
+                <p className="mt-1 text-2xl font-bold">{yesterdayCompleted.length}/{yesterdaySessions.length}</p>
+                <p className="text-xs text-muted-foreground">đã hoàn thành</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-sm font-medium">Nhiệm vụ đến hạn</p>
+                <p className="mt-1 text-2xl font-bold">{yesterdayCompletedTasks.length}/{yesterdayTasks.length}</p>
+                <p className="text-xs text-muted-foreground">đã hoàn thành</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Today's timeline preview */}
       <Card>

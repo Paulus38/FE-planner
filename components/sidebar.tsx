@@ -35,6 +35,7 @@ import {
   Map,
   Trophy,
   Star,
+  ListTodo,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -60,6 +61,8 @@ const staticNavItems = [
   { href: '/calendar', label: 'Lịch tuần', icon: CalendarRange },
   { href: '/schedule', label: 'Thời khóa biểu', icon: BookOpen },
   { href: '/self-study', label: 'Tự học', icon: GraduationCap },
+  { href: '/books', label: 'Đọc sách', icon: BookMarked },
+  { href: '/tasks', label: 'Nhiệm vụ', icon: ListTodo },
   { href: '/courses', label: 'Quản lý môn học', icon: Library },
   { href: '/statistics', label: 'Thống kê', icon: BarChart3 },
   { href: '/weekly-review', label: 'Tổng kết tuần', icon: PenLine },
