@@ -178,6 +178,7 @@ export function buildTimelineForDay(
 
   for (const se of scheduleEntries) {
     if (se.weekday !== weekday) continue;
+    if (!matchesWeekPattern(date, se.week_pattern)) continue;
     const cat = se.session_type === 'reading' ? 'class' : 'class';
     activities.push({
       id: `class-${se.id}`,
@@ -192,6 +193,35 @@ export function buildTimelineForDay(
       status: 'planned',
       note: se.note,
     });
+  }
+
+  function getIsoWeekNumber(date: Date): number {
+    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = utcDate.getUTCDay() || 7;
+    utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+    return Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  function matchesWeekPattern(date: Date, pattern?: string | null): boolean {
+    if (!pattern || pattern === 'all' || pattern === 'weekly') return true;
+
+    const normalized = pattern.toLowerCase().replace(/\s+/g, '_');
+    const isoWeek = getIsoWeekNumber(date);
+    const weekOfMonth = Math.ceil(date.getDate() / 7);
+
+    if (normalized === 'even' || normalized === 'week_even') return isoWeek % 2 === 0;
+    if (normalized === 'odd' || normalized === 'week_odd') return isoWeek % 2 === 1;
+    if (normalized === 'biweekly') return isoWeek % 2 === 1;
+
+    const monthWeeks = normalized.match(/^week_(\d+)(?:_and_(\d+))?$/);
+    if (monthWeeks) {
+      const first = Number(monthWeeks[1]);
+      const second = monthWeeks[2] ? Number(monthWeeks[2]) : undefined;
+      return weekOfMonth === first || weekOfMonth === second;
+    }
+
+    return true;
   }
 
   for (const ss of studySessions) {

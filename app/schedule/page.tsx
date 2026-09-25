@@ -35,6 +35,7 @@ export default function SchedulePage() {
     subject_name: '',
     subject_id: '' as string | null,
     session_type: 'class',
+    week_pattern: 'all' as string | null,
     recurrence: 'weekly',
     recurrence_end_date: '' as string | null,
     note: '',
@@ -53,6 +54,7 @@ export default function SchedulePage() {
       subject_name: '',
       subject_id: null,
       session_type: 'class',
+      week_pattern: 'all',
       recurrence: 'weekly',
       recurrence_end_date: null,
       note: '',
@@ -69,6 +71,7 @@ export default function SchedulePage() {
       subject_name: entry.subject_name,
       subject_id: entry.subject_id || null,
       session_type: entry.session_type,
+      week_pattern: entry.week_pattern || 'all',
       recurrence: entry.recurrence || 'weekly',
       recurrence_end_date: entry.recurrence_end_date || null,
       note: entry.note || '',
@@ -103,6 +106,7 @@ export default function SchedulePage() {
       subject_name: form.subject_name.trim(),
       subject_id: form.subject_id || null,
       session_type: form.session_type,
+      week_pattern: form.week_pattern || 'all',
       recurrence: form.recurrence,
       recurrence_end_date: form.recurrence_end_date || null,
       note: form.note.trim() || null,
@@ -350,6 +354,27 @@ export default function SchedulePage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Tuần học</Label>
+              <Select
+                value={form.week_pattern || 'all'}
+                onValueChange={(v) => setForm({ ...form, week_pattern: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Mọi tuần</SelectItem>
+                  <SelectItem value="odd">Tuần lẻ</SelectItem>
+                  <SelectItem value="even">Tuần chẵn</SelectItem>
+                  <SelectItem value="week_1_and_3">Tuần 1 và 3 trong tháng</SelectItem>
+                  <SelectItem value="week_2_and_4">Tuần 2 và 4 trong tháng</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Tuần chẵn/lẻ tính theo số tuần ISO trong năm.
+              </p>
             </div>
             {form.recurrence !== 'once' && (
               <div className="space-y-2">

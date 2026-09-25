@@ -66,6 +66,7 @@ export interface ScheduleEntry {
   subject_name: string;
   subject_id?: string | null;
   session_type: string;
+  week_pattern?: string | null;
   recurrence: string;
   recurrence_end_date?: string | null;
   note?: string | null;
