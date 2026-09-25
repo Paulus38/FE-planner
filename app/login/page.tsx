@@ -237,7 +237,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <Church className="h-7 w-7 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Chủng Sinh Study Planner</CardTitle>
+          <CardTitle className="text-2xl">Study Planner</CardTitle>
           <CardDescription>
             {mode === 'signin' ? 'Đăng nhập để tiếp tục' : 'Tạo tài khoản mới'}
           </CardDescription>

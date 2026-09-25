@@ -85,7 +85,7 @@ export function Sidebar() {
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
         <Link href="/" className="flex items-center gap-2">
           <Church className="h-6 w-6 text-primary" />
-          <span className="font-semibold">Chủng Sinh Planner</span>
+          <span className="font-semibold">Planner</span>
         </Link>
         <Button
           variant="ghost"
@@ -121,7 +121,7 @@ export function Sidebar() {
         <div className="flex items-center gap-2 border-b border-border px-6 py-5">
           <Church className="h-7 w-7 text-primary" />
           <div>
-            <h1 className="text-sm font-semibold leading-tight">Chủng Sinh</h1>
+            <h1 className="text-sm font-semibold leading-tight">Planner</h1>
             <p className="text-xs text-muted-foreground leading-tight">Study Planner</p>
           </div>
         </div>
