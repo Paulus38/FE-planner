@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useAppData } from '@/hooks/use-app-data';
 import { buildTimelineForDay, dateStr, getWeekDates, addDays, formatVietnameseDate } from '@/lib/scheduler';
 import { getCategoryColors, WEEKDAY_NAMES_SHORT } from '@/lib/constants';
@@ -79,7 +79,7 @@ export default function CalendarPage() {
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-          <DayTimeline activities={selectedTimeline} />
+          <DayTimeline activities={selectedTimeline} date={selectedDate} />
         </TabsContent>
 
         {/* WEEK VIEW */}
@@ -136,7 +136,7 @@ export default function CalendarPage() {
               );
             })}
           </div>
-          <DayTimeline activities={selectedTimeline} />
+          <DayTimeline activities={selectedTimeline} date={selectedDate} />
         </TabsContent>
 
         {/* MONTH VIEW */}
@@ -203,9 +203,24 @@ export default function CalendarPage() {
   );
 }
 
-function DayTimeline({ activities }: { activities: TimelineActivity[] }) {
-  const now = new Date();
+function DayTimeline({ activities, date }: { activities: TimelineActivity[]; date: Date }) {
+  const [now, setNow] = useState(new Date());
+  const currentRef = useRef<HTMLDivElement>(null);
   const currentMin = now.getHours() * 60 + now.getMinutes();
+  const isToday = dateStr(date) === dateStr(now);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!isToday) return;
+    const frame = window.requestAnimationFrame(() => {
+      currentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isToday, currentMin]);
 
   return (
     <Card>
@@ -225,6 +240,7 @@ function DayTimeline({ activities }: { activities: TimelineActivity[] }) {
             return (
               <div
                 key={a.id}
+                ref={isToday && isCurrent ? currentRef : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
                   isCurrent ? cat.bg : isPast ? 'opacity-50' : ''
                 }`}

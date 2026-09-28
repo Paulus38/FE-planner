@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenu } from '@/components/user-menu';
 import { Loader2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { TaskTimerBubble } from '@/components/task-timer-bubble';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -47,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <main className="p-4 lg:p-8">{children}</main>
       </div>
+      <TaskTimerBubble />
     </div>
   );
 }

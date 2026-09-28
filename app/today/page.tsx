@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppData } from '@/hooks/use-app-data';
 import { supabase } from '@/lib/api';
 import {
@@ -18,13 +18,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Circle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, ChevronDown, ChevronUp, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import type { TimelineActivity, StudySession } from '@/lib/types';
 
 export default function TodayPage() {
   const { settings, fixedActivities, scheduleEntries, sessions, tasks, loading, refresh } = useAppData();
   const [now, setNow] = useState(new Date());
+  const previousActivity = useRef<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 30000);
@@ -44,6 +45,24 @@ export default function TodayPage() {
   const totalCount = selfStudyItems.length;
   const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+  useEffect(() => {
+    const current = timeline.find((activity) => {
+      const start = timeToMinutes(activity.start_time);
+      let end = timeToMinutes(activity.end_time);
+      if (end < start) end += 24 * 60;
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      return currentMinutes >= start && currentMinutes < end;
+    });
+    if (current && previousActivity.current && previousActivity.current !== current.id) {
+      const message = `Đã chuyển sang: ${current.title}`;
+      toast.info(message);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Study Planner', { body: message });
+      }
+    }
+    previousActivity.current = current?.id || null;
+  }, [now, timeline]);
+
   async function toggleComplete(activity: TimelineActivity) {
     if (!activity.session_id) return;
     const session = sessions.find((s) => s.id === activity.session_id);
@@ -61,7 +80,11 @@ export default function TodayPage() {
       toast.error('Không thể cập nhật. Vui lòng thử lại.');
     } else {
       await syncDailyProgress(session.id, newStatus === 'completed');
-      toast.success(newStatus === 'completed' ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu.');
+      const message = newStatus === 'completed' ? 'Đã hoàn thành phiên học!' : 'Đã bỏ đánh dấu.';
+      toast.success(message);
+      if (newStatus === 'completed' && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Study Planner', { body: message });
+      }
       refresh();
     }
   }
@@ -109,6 +132,18 @@ export default function TodayPage() {
       toast.success('Đã cập nhật thời gian thực tế.');
       refresh();
     }
+
+  }
+
+  async function enableNotifications() {
+    if (!('Notification' in window)) {
+      toast.error('Trình duyệt này không hỗ trợ thông báo.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    toast[permission === 'granted' ? 'success' : 'error'](
+      permission === 'granted' ? 'Đã bật thông báo trên máy.' : 'Bạn chưa cấp quyền thông báo.'
+    );
   }
 
   if (loading) {
@@ -136,6 +171,11 @@ export default function TodayPage() {
             <p className="text-xs text-muted-foreground">{completedCount}/{totalCount}</p>
           </div>
         </Card>
+        {'Notification' in window && Notification.permission !== 'granted' && (
+          <Button variant="outline" size="sm" onClick={enableNotifications}>
+            <Bell className="h-4 w-4" /> Bật thông báo
+          </Button>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -193,8 +233,17 @@ function ActivityRow({
   onUpdateMin: (sessionId: string, min: number) => void;
 }) {
   const cat = getCategoryColors(activity.category);
+  const rowRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [actualMin, setActualMin] = useState(activity.actual_min?.toString() || '');
+
+  useEffect(() => {
+    if (!isCurrent) return;
+    const frame = window.requestAnimationFrame(() => {
+      rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isCurrent]);
 
   const duration = formatDuration(
     activity.planned_min ||
@@ -205,6 +254,7 @@ function ActivityRow({
 
   return (
     <div
+      ref={rowRef}
       className={`rounded-lg border transition-all ${
         isCurrent ? `${cat.bg} ${cat.border} shadow-sm` : 'border-border'
       } ${isPast && !isCompleted ? 'opacity-50' : ''} ${isCompleted ? 'opacity-70' : ''}`}

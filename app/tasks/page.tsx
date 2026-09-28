@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import type { Task } from '@/lib/types';
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from '@/lib/constants';
+import { startTaskTimer } from '@/components/task-timer-bubble';
 
 export default function TasksPage() {
   const { tasks, subjects, loading, refresh } = useAppData();
@@ -58,10 +59,13 @@ export default function TasksPage() {
   }
 
   async function updateStatus(task: Task, status: Task['status']) {
+    const now = new Date().toISOString();
     const { error } = await supabase.from('tasks').update({
       status,
       actual_min: status === 'completed' ? task.actual_min ?? task.estimated_min : task.actual_min,
-      updated_at: new Date().toISOString(),
+      started_at: status === 'in_progress' ? task.started_at || now : task.started_at,
+      ended_at: status === 'completed' ? now : task.ended_at,
+      updated_at: now,
     }).eq('id', task.id);
     if (error) {
       toast.error(`Không thể cập nhật nhiệm vụ: ${error}`);
@@ -128,7 +132,10 @@ export default function TasksPage() {
         <CardHeader><CardTitle>Đang cần làm ({openTasks.length})</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {openTasks.length === 0 ? <p className="text-sm text-muted-foreground">Chưa có nhiệm vụ. Hãy thêm nhiệm vụ đầu tiên.</p> : openTasks.map((task) => (
-            <TaskRow key={task.id} task={task} subjects={subjects} onComplete={() => updateStatus(task, 'completed')} onStart={() => updateStatus(task, 'in_progress')} />
+            <TaskRow key={task.id} task={task} subjects={subjects} onComplete={() => updateStatus(task, 'completed')} onStart={() => {
+              startTaskTimer(task);
+              void updateStatus(task, 'in_progress');
+            }} />
           ))}
         </CardContent>
       </Card>
@@ -159,6 +166,8 @@ function TaskRow({ task, subjects, onComplete, onStart }: { task: Task; subjects
           <span>Ưu tiên: {TASK_PRIORITY_LABELS[task.priority] || `Mức ${task.priority}`}</span>
           <span>Dự kiến: {task.estimated_min} phút</span>
           {task.actual_min !== null && task.actual_min !== undefined && <span>Thực tế: {task.actual_min} phút</span>}
+          {task.started_at && <span>Bắt đầu: {new Date(task.started_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>}
+          {task.ended_at && <span>Kết thúc: {new Date(task.ended_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>}
           {task.due_date && <span>Hạn: {task.due_date}</span>}
         </div>
         {task.note && <p className="mt-1 text-xs text-muted-foreground">Ghi chú: {task.note}</p>}

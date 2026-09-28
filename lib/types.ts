@@ -97,6 +97,8 @@ export interface Task {
   due_date?: string | null;
   estimated_min: number;
   actual_min?: number | null;
+  started_at?: string | null;
+  ended_at?: string | null;
   status: 'pending' | 'in_progress' | 'completed' | 'skipped';
   note?: string | null;
   created_at: string;
