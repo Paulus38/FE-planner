@@ -34,6 +34,7 @@ export default function JournalPage() {
   useEffect(() => {
     if (todayJournal) {
       setForm({
+        daily_summary: todayJournal.daily_summary || '',
         grateful_for: todayJournal.grateful_for || '',
         good_deed: todayJournal.good_deed || '',
         needs_improvement: todayJournal.needs_improvement || '',
@@ -74,6 +75,7 @@ export default function JournalPage() {
     try {
       const data = {
         entry_date: ds,
+        daily_summary: form.daily_summary?.trim() || null,
         grateful_for: form.grateful_for?.trim() || null,
         good_deed: form.good_deed?.trim() || null,
         needs_improvement: form.needs_improvement?.trim() || null,
@@ -229,8 +231,8 @@ export default function JournalPage() {
                 value={form[q.key] || ''}
                 onChange={(e) => setForm({ ...form, [q.key]: e.target.value })}
                 placeholder="Viết suy nghĩ của bạn..."
-                rows={3}
-                className="resize-none"
+                rows={q.key === 'daily_summary' ? 5 : 3}
+                className={q.key === 'daily_summary' ? 'min-h-32 resize-y' : 'resize-none'}
               />
             </div>
           ))}
@@ -284,9 +286,9 @@ export default function JournalPage() {
                   </span>
                   {entry.completed && <CheckCircle2 className="h-4 w-4 text-green-500" />}
                 </div>
-                {entry.grateful_for && (
+                {(entry.daily_summary || entry.grateful_for) && (
                   <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                    Biết ơn: {entry.grateful_for}
+                    {entry.daily_summary || `Biết ơn: ${entry.grateful_for}`}
                   </p>
                 )}
               </div>

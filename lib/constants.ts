@@ -169,6 +169,7 @@ export const DEFAULT_WEEKLY_PLAN: Record<number, { session1: { subject: string; 
 };
 
 export const JOURNAL_QUESTIONS = [
+  { key: 'daily_summary', label: 'Hôm nay tôi đã làm được những gì?' },
   { key: 'grateful_for', label: 'Hôm nay tôi biết ơn điều gì?' },
   { key: 'good_deed', label: 'Điều tốt tôi đã làm hôm nay?' },
   { key: 'needs_improvement', label: 'Điều tôi chưa tốt?' },

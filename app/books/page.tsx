@@ -6,6 +6,7 @@ import { supabase } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -270,7 +271,11 @@ export default function BooksPage() {
                   )}
                 </div>
 
-                {book.note && <p className="mt-3 text-xs text-muted-foreground">{book.note}</p>}
+                {book.note && (
+                  <p className="mt-3 text-xs text-muted-foreground line-clamp-2">
+                    {book.note}
+                  </p>
+                )}
               </CardContent>
             </Card>
           );
@@ -377,7 +382,13 @@ export default function BooksPage() {
             </div>
             <div className="space-y-2">
               <Label>Ghi chú</Label>
-              <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              <Textarea
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                placeholder="Viết ghi chú dài, ghi lại cảm nhận và kiến thức từ cuốn sách..."
+                rows={10}
+                className="min-h-48 resize-y"
+              />
             </div>
           </div>
           <DialogFooter>

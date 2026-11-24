@@ -5,6 +5,7 @@ import type {
   Settings,
   TimelineActivity,
   Task,
+  StudySubject,
 } from './types';
 import { DEFAULT_WEEKLY_PLAN } from './constants';
 
@@ -365,7 +366,8 @@ export function smartPlan(
   availableMin: number,
   tasks: Task[],
   weekday: number,
-  englishTargetPct: number = 50
+  englishTargetPct: number = 50,
+  subjects: StudySubject[] = []
 ): PlannedSession[] {
   const result: PlannedSession[] = [];
   let remaining = availableMin;
@@ -382,6 +384,36 @@ export function smartPlan(
       priority: 1,
     });
     remaining -= Math.round(hwAlloc);
+  }
+
+  if (remaining <= 0) return result;
+
+  const fixedCodes = new Set(['english', 'vietnamese', 'instrument', 'reading', 'homework', 'journal']);
+  const customSubjects = subjects.filter((subject) =>
+    !!subject.code &&
+    !fixedCodes.has(subject.code)
+  );
+
+  for (const subject of customSubjects) {
+    if (remaining <= 0) break;
+
+    const taskMin = pendingTasks
+      .filter((task) => task.subject_code === subject.code)
+      .reduce((sum, task) => sum + task.estimated_min, 0);
+    const dailyGoal = subject.weekly_goal_min > 0
+      ? Math.ceil(subject.weekly_goal_min / 7)
+      : taskMin > 0
+        ? Math.ceil(taskMin / 3)
+        : 30;
+    const duration = Math.min(remaining, Math.max(30, dailyGoal));
+
+    result.push({
+      subject_code: subject.code,
+      title: subject.name,
+      duration_min: duration,
+      priority: 3,
+    });
+    remaining -= duration;
   }
 
   if (remaining <= 0) return result;

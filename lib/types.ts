@@ -127,6 +127,7 @@ export interface StudySession {
 export interface JournalEntry {
   id: string;
   entry_date: string;
+  daily_summary?: string | null;
   grateful_for?: string | null;
   good_deed?: string | null;
   needs_improvement?: string | null;

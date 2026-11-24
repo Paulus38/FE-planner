@@ -105,7 +105,7 @@ export default function SelfStudyPage() {
       const selfStudyEnd = parseInt(settings.self_study_end.split(':')[0]) * 60 + parseInt(settings.self_study_end.split(':')[1]);
       const availableMin = selfStudyEnd - selfStudyStart - settings.break_duration_min;
 
-      const planned = smartPlan(availableMin, pendingTasks, weekday, settings.english_target_pct);
+      const planned = smartPlan(availableMin, pendingTasks, weekday, settings.english_target_pct, subjects);
       const newSessions = generateStudySessions(today, settings, planned);
 
       if (newSessions.length > 0) {
